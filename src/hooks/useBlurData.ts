@@ -2,49 +2,59 @@ import { useState, useEffect, useCallback } from 'react';
 import { BlurData, BlurRegion } from '../types/blur-region';
 import { storage, STORAGE_KEYS } from '../utils/storage';
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const normalizeBlurData = (data: unknown): BlurData => {
+  if (!isRecord(data)) {
+    return {};
+  }
+
+  return Object.entries(data).reduce<BlurData>((acc, [pageId, regions]) => {
+    acc[pageId] = Array.isArray(regions) ? (regions as BlurRegion[]) : [];
+    return acc;
+  }, {});
+};
+
 /**
  * 블러 영역 상태 관리 훅
  * - localStorage 자동 저장/불러오기
  * - 페이지별 블러 영역 관리
  */
 export function useBlurData() {
-  // 블러 데이터 (pageId -> BlurRegion[])
   const [blurData, setBlurData] = useState<BlurData>(() => {
-    return storage.get(STORAGE_KEYS.BLUR_DATA, {});
+    const saved = storage.get<unknown>(STORAGE_KEYS.BLUR_DATA, {});
+    return normalizeBlurData(saved);
   });
 
-  // 블러 모드 활성화된 페이지 목록
   const [blurModePages, setBlurModePages] = useState<Set<string>>(new Set());
 
-  // blurData 변경 시 localStorage에 자동 저장
   useEffect(() => {
     storage.set(STORAGE_KEYS.BLUR_DATA, blurData);
   }, [blurData]);
 
-  // 특정 페이지의 블러 모드 토글
   const toggleBlurMode = useCallback((pageId: string) => {
-    setBlurModePages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(pageId)) {
-        newSet.delete(pageId);
+    setBlurModePages((prev) => {
+      const next = new Set(prev);
+      if (next.has(pageId)) {
+        next.delete(pageId);
       } else {
-        newSet.add(pageId);
+        next.add(pageId);
       }
-      return newSet;
+      return next;
     });
   }, []);
 
-  // 특정 페이지가 블러 모드인지 확인
   const isBlurMode = useCallback((pageId: string) => {
     return blurModePages.has(pageId);
   }, [blurModePages]);
 
-  // 블러 영역 추가
   const addBlurRegion = useCallback((pageId: string, region: Omit<BlurRegion, 'id' | 'pageId'>) => {
     const regionId = Date.now().toString();
     const newRegion: BlurRegion = { ...region, id: regionId, pageId };
 
-    setBlurData(prev => ({
+    setBlurData((prev) => ({
       ...prev,
       [pageId]: [...(prev[pageId] || []), newRegion]
     }));
@@ -52,34 +62,29 @@ export function useBlurData() {
     return regionId;
   }, []);
 
-  // 블러 영역 삭제
   const removeBlurRegion = useCallback((pageId: string, regionId: string) => {
-    setBlurData(prev => ({
+    setBlurData((prev) => ({
       ...prev,
-      [pageId]: (prev[pageId] || []).filter(r => r.id !== regionId)
+      [pageId]: (prev[pageId] || []).filter((region) => region.id !== regionId)
     }));
   }, []);
 
-  // 특정 페이지의 블러 영역 가져오기
   const getBlurRegions = useCallback((pageId: string): BlurRegion[] => {
     return blurData[pageId] || [];
   }, [blurData]);
 
-  // 특정 페이지의 모든 블러 영역 삭제
   const clearPageBlurRegions = useCallback((pageId: string) => {
-    setBlurData(prev => {
-      const newData = { ...prev };
-      delete newData[pageId];
-      return newData;
+    setBlurData((prev) => {
+      const next = { ...prev };
+      delete next[pageId];
+      return next;
     });
   }, []);
 
-  // 모든 페이지의 블러 모드 해제
   const clearBlurModePages = useCallback(() => {
     setBlurModePages(new Set());
   }, []);
 
-  // 모든 블러 데이터 초기화
   const resetBlurData = useCallback(() => {
     setBlurData({});
     setBlurModePages(new Set());

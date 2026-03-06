@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Lock, AlertCircle } from 'lucide-react';
+import { STORAGE_KEYS, LEGACY_STORAGE_KEYS } from '../utils/storage';
 
 interface Props {
   onAuthenticate: () => void;
@@ -13,7 +14,13 @@ export function PasswordProtection({ onAuthenticate }: Props) {
     e.preventDefault();
 
     if (password === import.meta.env.VITE_APP_PASSWORD) {
-      sessionStorage.setItem('tour-authenticated', 'true');
+      try {
+        sessionStorage.setItem(STORAGE_KEYS.AUTH, 'true');
+        sessionStorage.removeItem(LEGACY_STORAGE_KEYS.AUTH);
+      } catch (storageError) {
+        console.error('Failed to save auth state:', storageError);
+      }
+
       onAuthenticate();
     } else {
       setError(true);
@@ -26,7 +33,6 @@ export function PasswordProtection({ onAuthenticate }: Props) {
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-yellow-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-3xl shadow-2xl p-8 border border-cyan-100">
-          {/* Logo/Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl mb-4">
               <Lock className="w-8 h-8 text-white" />
@@ -35,7 +41,6 @@ export function PasswordProtection({ onAuthenticate }: Props) {
             <p className="text-gray-600">여행 기획서</p>
           </div>
 
-          {/* Password Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="password" className="block text-gray-700 mb-2">
@@ -52,7 +57,6 @@ export function PasswordProtection({ onAuthenticate }: Props) {
               />
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 animate-shake">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -60,7 +64,6 @@ export function PasswordProtection({ onAuthenticate }: Props) {
               </div>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
               className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 text-white py-3 rounded-xl hover:from-cyan-600 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
@@ -69,7 +72,6 @@ export function PasswordProtection({ onAuthenticate }: Props) {
             </button>
           </form>
 
-          {/* Footer */}
           <p className="text-center text-gray-400 text-sm mt-6">
             승인된 사용자만 접속 가능합니다
           </p>

@@ -48,10 +48,11 @@ Travel Proposal Design/
 ├── 📄 README.md                    # 프로젝트 설명
 │
 ├── 📁 docs/                        # 문서 디렉토리
-│   └── 📄 structure.md             # 본 파일 (프로젝트 구조)
+│   ├── 📄 structure.md             # 본 파일 (프로젝트 구조)
+│   └── 📄 troubleshooting.md       # 배포/실행 문제 해결 기록
 │
 └── 📁 src/
-    ├── 📄 main.tsx                 # React 앱 엔트리 포인트
+    ├── 📄 main.tsx                 # React 앱 엔트리 포인트 (에러 바운더리 포함)
     ├── 📄 App.tsx                  # 메인 앱 컴포넌트 (핵심 로직)
     ├── 📄 index.css                # 글로벌 스타일
     │
@@ -75,6 +76,7 @@ Travel Proposal Design/
     │   │   ├── 📄 dialog.tsx
     │   │   └── ...
     │   │
+    │   ├── 📄 AppErrorBoundary.tsx # 최상단 렌더 오류 복구 UI
     │   └── 📄 페이지 컴포넌트들    # 비즈니스 로직 컴포넌트
     │       ├── 📄 CoverPage.tsx
     │       ├── 📄 IntroductionPage.tsx
@@ -90,7 +92,7 @@ Travel Proposal Design/
     │
     ├── 📁 utils/                   # 유틸리티 함수 ⭐UPDATED
     │   ├── 📄 index.ts             # 유틸 인덱스 (re-export)
-    │   ├── 📄 storage.ts           # localStorage 래퍼
+    │   ├── 📄 storage.ts           # 앱 네임스페이스/레거시 마이그레이션 포함 저장소 래퍼
     │   ├── 📄 export.ts            # JSON 내보내기/불러오기
     │   └── 📄 date-parser.ts       # 날짜 파싱 유틸
     │
@@ -106,14 +108,15 @@ Travel Proposal Design/
 **파일**: `src/components/PasswordProtection.tsx`
 
 - 세션 기반 인증 (sessionStorage 사용)
-- 하드코딩된 비밀번호: `thekadang`
+- 비밀번호는 `VITE_APP_PASSWORD` 환경변수 사용
+- 인증 키는 `uninaplan:auth` 네임스페이스 사용
 - 인증 상태 유지 (브라우저 탭 종료까지)
 
 ```typescript
 // 인증 흐름
 1. 앱 로드 → isAuthenticated = false
 2. 비밀번호 입력 → 검증
-3. 인증 성공 → sessionStorage에 'tour-authenticated' 저장
+3. 인증 성공 → sessionStorage에 `uninaplan:auth` 저장
 4. 메인 앱 컨텐츠 표시
 ```
 

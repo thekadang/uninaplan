@@ -2789,3 +2789,38 @@ newPage = {
 - `docs/task.md`
 - `docs/history.md`
 - `docs/deployment.md`
+---
+
+## History #57 ⭐
+**날짜**: 2026-03-06 19:03:09
+**사용자 질문**: gh-pages를 선택해도 정상배포되게 해결해
+
+### 수행한 작업
+- [x] GitHub Pages 빈 화면 원인 분석
+- [x] 브라우저 저장 키를 `uninaplan:*` 네임스페이스로 분리
+- [x] 레거시 저장 키(`tourData`, `pageConfigs`, `blurData`, `tour-authenticated`) 자동 호환 처리 추가
+- [x] `useTourData`, `usePageConfigs`, `useBlurData`에 잘못된 저장 데이터 형식 방어 로직 추가
+- [x] 최상단 `AppErrorBoundary` 추가로 빈 화면 대신 복구 UI 제공
+- [x] 인증 상태를 새 session key 기준으로 정리
+- [x] 로컬 빌드 검증 완료
+- [x] `gh-pages` 브랜치 재배포
+
+### 변경된 파일
+- 📝 `src/utils/storage.ts` - 네임스페이스 저장 키, 레거시 키 마이그레이션, 전체 초기화 유틸 추가
+- 📝 `src/hooks/useTourData.ts` - 저장 데이터 정규화 및 마이그레이션 방어 로직 추가
+- 📝 `src/hooks/usePageConfigs.ts` - pageConfigs 형식 검증 및 기본 페이지 보강
+- 📝 `src/hooks/useBlurData.ts` - blurData 형식 검증 추가
+- 📝 `src/hooks/useAppActions.ts` - 직접 localStorage 접근을 공용 storage 유틸 사용으로 변경
+- 📝 `src/App.tsx` - 인증 상태를 namespaced session key 기준으로 초기화
+- 📝 `src/components/PasswordProtection.tsx` - namespaced session key 사용으로 변경
+- 📝 `src/hooks/useAuth.ts` - namespaced session key 사용으로 변경
+- 📄 `src/components/AppErrorBoundary.tsx` - 렌더 오류 복구 UI 신규 추가
+- 📝 `src/main.tsx` - AppErrorBoundary로 앱 감싸기
+- 📄 `docs/troubleshooting.md` - GitHub Pages 빈 화면 이슈 문서화
+- 📝 `docs/structure.md` - 신규 파일/저장소 구조 반영
+- 📝 `docs/history.md` - 작업 이력 추가
+
+### 참조한 문서
+- `docs/history.md`
+- `docs/task.md`
+- `docs/structure.md`

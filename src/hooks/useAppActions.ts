@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { TourData, defaultTourData } from '../types/tour-data';
 import { PageConfig } from '../types/page-config';
 import { BlurRegion } from '../types/blur-region';
+import { storage, STORAGE_KEYS } from '../utils/storage';
 
 interface AppActionsProps {
     tourData: TourData;
@@ -33,8 +34,8 @@ export function useAppActions({
 
     const saveAsDefault = useCallback(async () => {
         try {
-            localStorage.setItem('tourData', JSON.stringify(tourData));
-            localStorage.setItem('pageConfigs', JSON.stringify(pageConfigs));
+            storage.set(STORAGE_KEYS.TOUR_DATA, tourData);
+            storage.set(STORAGE_KEYS.PAGE_CONFIGS, pageConfigs);
 
             const dataToExport = {
                 tourData,
@@ -77,12 +78,12 @@ export function useAppActions({
                     if (data.tourData) {
                         const mergedTourData = { ...defaultTourData, ...data.tourData };
                         setTourData(mergedTourData);
-                        localStorage.setItem('tourData', JSON.stringify(mergedTourData));
+                        storage.set(STORAGE_KEYS.TOUR_DATA, mergedTourData);
                     }
 
                     if (data.pageConfigs) {
                         setPageConfigs(data.pageConfigs);
-                        localStorage.setItem('pageConfigs', JSON.stringify(data.pageConfigs));
+                        storage.set(STORAGE_KEYS.PAGE_CONFIGS, data.pageConfigs);
                     }
 
                     alert('✅ 설정이 성공적으로 불러와졌습니다!');
@@ -499,13 +500,13 @@ export function useAppActions({
 
     const handleReset = useCallback((customDefaultData: any) => {
         if (confirm('정말 초기화하시겠습니까?\n\n불러온 모든 데이터가 삭제되고 커스텀 기본값으로 초기화됩니다.')) {
-            localStorage.setItem('tourData', JSON.stringify(customDefaultData.tourData));
+            storage.set(STORAGE_KEYS.TOUR_DATA, customDefaultData.tourData);
             if (customDefaultData.pageConfigs) {
-                localStorage.setItem('pageConfigs', JSON.stringify(customDefaultData.pageConfigs));
+                storage.set(STORAGE_KEYS.PAGE_CONFIGS, customDefaultData.pageConfigs);
             } else {
-                localStorage.removeItem('pageConfigs');
+                storage.remove(STORAGE_KEYS.PAGE_CONFIGS);
             }
-            localStorage.removeItem('blurData');
+            storage.remove(STORAGE_KEYS.BLUR_DATA);
             window.location.reload();
         }
     }, []);

@@ -1,19 +1,54 @@
 import { useState, useEffect, useCallback } from 'react';
+import { PageConfig } from '../types/page-config';
 import { storage, STORAGE_KEYS } from '../utils/storage';
 
-// PageConfig 타입 정의
-export interface PageConfig {
-  id: string;
-  type: 'cover' | 'intro' | 'flight' | 'flight-departure' | 'flight-transit' | 'flight-arrival' | 'itinerary' | 'accommodation' | 'quotation' | 'process' | 'payment' | 'detailed-schedule' | 'tourist-spot' | 'transportation-ticket' | 'transportation-card' | 'service-options' | 'contact';
-  title: string;
-  data?: any;
-}
+const VALID_PAGE_TYPES = new Set<PageConfig['type']>([
+  'cover',
+  'intro',
+  'flight',
+  'flight-departure',
+  'flight-transit',
+  'flight-arrival',
+  'itinerary',
+  'accommodation',
+  'quotation',
+  'process',
+  'service-options',
+  'payment',
+  'detailed-schedule',
+  'tourist-spot',
+  'transportation-ticket',
+  'transportation-card',
+  'contact'
+]);
 
-// 기본 페이지 설정
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const normalizePageConfig = (config: unknown, index: number): PageConfig | null => {
+  if (!isRecord(config)) {
+    return null;
+  }
+
+  const rawType = typeof config.type === 'string' ? config.type : '';
+  if (!VALID_PAGE_TYPES.has(rawType as PageConfig['type'])) {
+    return null;
+  }
+
+  return {
+    id: typeof config.id === 'string' && config.id ? config.id : `migrated-${index}`,
+    type: rawType as PageConfig['type'],
+    title: typeof config.title === 'string' && config.title ? config.title : '페이지',
+    data: config.data
+  };
+};
+
 const defaultPageConfigs: PageConfig[] = [
   { id: '1', type: 'cover', title: '표지' },
   { id: '2', type: 'intro', title: '여행 소개' },
   { id: '10', type: 'process', title: '프로세스' },
+  { id: '10-1', type: 'service-options', title: '서비스 옵션' },
   { id: '3', type: 'flight-departure', title: '항공편 (출발)' },
   { id: '4', type: 'flight-transit', title: '항공편 (중간이동)' },
   { id: '5', type: 'flight-arrival', title: '항공편 (도착)' },
@@ -25,66 +60,63 @@ const defaultPageConfigs: PageConfig[] = [
   { id: '13', type: 'transportation-card', title: '교통카드 안내' },
   { id: '9', type: 'quotation', title: '견적' },
   { id: '11', type: 'payment', title: '결제 안내' },
-  { id: '14', type: 'contact', title: '문의 하기' },
+  { id: '14', type: 'contact', title: '문의 하기' }
 ];
 
-/**
- * 페이지 설정 상태 관리 훅
- * - localStorage 자동 저장/불러오기
- * - 페이지 추가/삭제/복제/재정렬
- */
-export function usePageConfigs() {
-  const [pageConfigs, setPageConfigs] = useState<PageConfig[]>(() => {
-    // 마이그레이션 함수: 새로운 페이지 타입이 누락된 경우 자동 추가
-    const migratePageConfigs = (configs: PageConfig[]): PageConfig[] => {
-      let migrated = [...configs];
+const migratePageConfigs = (configs: unknown): PageConfig[] => {
+  const normalized = Array.isArray(configs)
+    ? configs
+        .map((config, index) => normalizePageConfig(config, index))
+        .filter((config): config is PageConfig => config !== null)
+    : [];
 
-      // contact 페이지가 없으면 마지막에 추가
-      if (!migrated.some(p => p.type === 'contact')) {
-        migrated.push({ id: '14', type: 'contact', title: '문의 하기' });
-      }
+  const migrated = normalized.length > 0 ? [...normalized] : [...defaultPageConfigs];
 
-      // service-options 페이지가 없으면 process 다음에 추가
-      const hasServiceOptions = migrated.some(c => c.type === 'service-options');
-      if (!hasServiceOptions) {
-        const processIndex = migrated.findIndex(c => c.type === 'process');
-        if (processIndex !== -1) {
-          migrated.splice(processIndex + 1, 0, {
-            id: '10-1',
-            type: 'service-options',
-            title: '서비스 옵션'
-          });
-        }
-      }
+  if (!migrated.some((page) => page.type === 'contact')) {
+    migrated.push({ id: '14', type: 'contact', title: '문의 하기' });
+  }
 
-      return migrated;
+  if (!migrated.some((page) => page.type === 'service-options')) {
+    const processIndex = migrated.findIndex((page) => page.type === 'process');
+    const serviceOptionsPage: PageConfig = {
+      id: '10-1',
+      type: 'service-options',
+      title: '서비스 옵션'
     };
 
-    const saved = storage.get(STORAGE_KEYS.PAGE_CONFIGS, defaultPageConfigs);
+    if (processIndex !== -1) {
+      migrated.splice(processIndex + 1, 0, serviceOptionsPage);
+    } else {
+      migrated.push(serviceOptionsPage);
+    }
+  }
+
+  return migrated;
+};
+
+export function usePageConfigs() {
+  const [pageConfigs, setPageConfigs] = useState<PageConfig[]>(() => {
+    const saved = storage.get<unknown>(STORAGE_KEYS.PAGE_CONFIGS, defaultPageConfigs);
     return migratePageConfigs(saved);
   });
 
   const [currentPage, setCurrentPage] = useState(0);
 
-  // pageConfigs 변경 시 localStorage에 자동 저장
   useEffect(() => {
     storage.set(STORAGE_KEYS.PAGE_CONFIGS, pageConfigs);
   }, [pageConfigs]);
 
-  // 현재 페이지가 범위를 벗어나면 조정
   useEffect(() => {
     if (currentPage >= pageConfigs.length) {
       setCurrentPage(Math.max(0, pageConfigs.length - 1));
     }
   }, [pageConfigs.length, currentPage]);
 
-  // 새 ID 생성 (충돌 방지를 위해 무작위 문자열 추가)
-  const generateId = useCallback(() => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
+  const generateId = useCallback(() => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`, []);
 
-  // 페이지 추가
   const addPage = useCallback((page: Omit<PageConfig, 'id'>, afterIndex?: number) => {
     const newPage: PageConfig = { ...page, id: generateId() };
-    setPageConfigs(prev => {
+    setPageConfigs((prev) => {
       const newConfigs = [...prev];
       const insertIndex = afterIndex !== undefined ? afterIndex + 1 : prev.length;
       newConfigs.splice(insertIndex, 0, newPage);
@@ -93,36 +125,37 @@ export function usePageConfigs() {
     return newPage.id;
   }, [generateId]);
 
-  // 페이지 삭제
   const removePage = useCallback((index: number) => {
-    if (pageConfigs.length <= 1) return false;
-    setPageConfigs(prev => prev.filter((_, i) => i !== index));
+    if (pageConfigs.length <= 1) {
+      return false;
+    }
+
+    setPageConfigs((prev) => prev.filter((_, pageIndex) => pageIndex !== index));
     return true;
   }, [pageConfigs.length]);
 
-  // 페이지 업데이트
   const updatePage = useCallback((index: number, updates: Partial<PageConfig>) => {
-    setPageConfigs(prev => {
+    setPageConfigs((prev) => {
       const newConfigs = [...prev];
       newConfigs[index] = { ...newConfigs[index], ...updates };
       return newConfigs;
     });
   }, []);
 
-  // 페이지 복제
   const duplicatePage = useCallback((index: number): PageConfig | null => {
-    if (index < 0 || index >= pageConfigs.length) return null;
+    if (index < 0 || index >= pageConfigs.length) {
+      return null;
+    }
 
     const pageToDuplicate = pageConfigs[index];
     const newPage: PageConfig = {
       ...pageToDuplicate,
       id: generateId(),
-      title: pageToDuplicate.title + ' (복사)',
-      // 데이터가 있는 경우에만 깊은 복사 수행
+      title: `${pageToDuplicate.title} (복사)`,
       data: pageToDuplicate.data ? JSON.parse(JSON.stringify(pageToDuplicate.data)) : undefined
     };
 
-    setPageConfigs(prev => {
+    setPageConfigs((prev) => {
       const newConfigs = [...prev];
       newConfigs.splice(index + 1, 0, newPage);
       return newConfigs;
@@ -131,11 +164,12 @@ export function usePageConfigs() {
     return newPage;
   }, [pageConfigs, generateId]);
 
-  // 페이지 순서 변경 (드래그 앤 드롭)
   const reorderPages = useCallback((fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) return;
+    if (fromIndex === toIndex) {
+      return;
+    }
 
-    setPageConfigs(prev => {
+    setPageConfigs((prev) => {
       const newConfigs = [...prev];
       const [removed] = newConfigs.splice(fromIndex, 1);
       newConfigs.splice(toIndex, 0, removed);
@@ -143,28 +177,24 @@ export function usePageConfigs() {
     });
   }, []);
 
-  // 페이지 이동
   const goToPage = useCallback((index: number) => {
     if (index >= 0 && index < pageConfigs.length) {
       setCurrentPage(index);
     }
   }, [pageConfigs.length]);
 
-  // 다음/이전 페이지
   const nextPage = useCallback(() => {
-    setCurrentPage(prev => Math.min(prev + 1, pageConfigs.length - 1));
+    setCurrentPage((prev) => Math.min(prev + 1, pageConfigs.length - 1));
   }, [pageConfigs.length]);
 
   const prevPage = useCallback(() => {
-    setCurrentPage(prev => Math.max(prev - 1, 0));
+    setCurrentPage((prev) => Math.max(prev - 1, 0));
   }, []);
 
-  // 현재 페이지 설정 가져오기
   const getCurrentPageConfig = useCallback(() => {
     return pageConfigs[currentPage];
   }, [pageConfigs, currentPage]);
 
-  // 초기화
   const resetPageConfigs = useCallback(() => {
     setPageConfigs(defaultPageConfigs);
     setCurrentPage(0);

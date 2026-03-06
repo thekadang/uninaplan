@@ -16,10 +16,17 @@ import { useTourData } from './hooks/useTourData';
 import { usePageConfigs } from './hooks/usePageConfigs';
 import { useBlurData } from './hooks/useBlurData';
 import { useAppActions } from './hooks/useAppActions';
+import { STORAGE_KEYS, LEGACY_STORAGE_KEYS } from './utils/storage';
 
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return sessionStorage.getItem(STORAGE_KEYS.AUTH) === 'true' || sessionStorage.getItem(LEGACY_STORAGE_KEYS.AUTH) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [showNav, setShowNav] = useState(false);
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false);
