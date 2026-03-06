@@ -2757,3 +2757,35 @@ newPage = {
 ### 참조한 문서
 - `docs/history.md`
 - `docs/task.md`
+---
+
+## History #56 ⭐
+**날짜**: 2026-03-06 18:38:50
+**사용자 질문**: 이거를 깃페이지로 배포하려면 어떻게 하면돼? / 좋아 배포할수 있게 해줘
+
+### 수행한 작업
+- [x] GitHub Pages 관련 설정 파일 점검 (`package.json`, `vite.config.ts`, `.github/workflows/deploy.yml`)
+- [x] 저장소명 기준 경로를 `uninaplan`으로 정리 (`homepage`, `base`, 배포 URL)
+- [x] GitHub Actions 배포 시 `VITE_APP_PASSWORD` secret 검증 및 주입 로직 추가
+- [x] `npm run deploy` 실패 원인 확인 (`gh-pages` CLI 경로 문제)
+- [x] `scripts/deploy_manual.ps1`를 보강하여 수동 배포 경로 정상화
+- [x] `npm run deploy` 재검증 후 `gh-pages` 브랜치 배포 성공
+- [x] 배포 문서 최신화
+
+### 변경된 파일
+- 📝 `.github/workflows/deploy.yml` - Pages Actions 배포 전 secret 검증 및 빌드 env 주입 추가
+- 📝 `package.json` - `homepage` 수정, `deploy` 스크립트를 수동 배포 스크립트 호출 방식으로 변경
+- 📝 `vite.config.ts` - `base`를 `/uninaplan/`으로 변경
+- 📝 `scripts/deploy_manual.ps1` - safe.directory 처리, 실패 체크, `gh-pages` 강제 푸시 로직 보강
+- 📝 `docs/deployment.md` - 수동/자동 배포 절차를 현재 저장소 기준으로 재작성
+- 📝 `docs/history.md` - 작업 이력 추가
+
+### 배포 결과
+- `gh-pages` 브랜치 생성 및 푸시 완료
+- 원격 브랜치 확인: `origin/gh-pages` → `9c21a0a`
+- 빌드 결과물 경로 확인: `/uninaplan/` 기준으로 생성됨
+
+### 참조한 문서
+- `docs/task.md`
+- `docs/history.md`
+- `docs/deployment.md`
