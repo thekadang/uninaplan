@@ -2719,3 +2719,23 @@ newPage = {
 ### 참조한 문서
 - `docs/optimization-plan.md`
 - `src/hooks/useTourData.ts`
+
+---
+
+## History #54
+**날짜**: 2026-03-06 18:15:57
+**사용자 질문**: 현재 프로젝트가 깃헙에 연결되있는데 연결된 깃헙 주소 알려줘 / 주소를 변경해서 배포하고 싶어. https://github.com/thekadang/uninaplan 이 주소로 변경하면 좋겠어.
+
+### 수행한 작업
+- [x] 현재 Git 원격 저장소(`origin`) 주소 확인
+- [x] `origin` fetch/push URL을 `https://github.com/thekadang/uninaplan.git`로 변경
+- [x] 변경 후 `git remote -v`로 정상 반영 확인
+- [x] 작업 이력 기록
+
+### 변경된 파일
+- `.git/config` - `origin` 원격 저장소 URL 변경
+- `docs/history.md` - 작업 이력 추가
+
+### 참조한 문서
+- `docs/history.md`
+- `docs/task.md`
